@@ -353,15 +353,16 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 // If qosCgroups are enabled then it returns the general pod container manager
 // otherwise it returns a no-op manager which essentially does nothing
 func (cm *containerManagerImpl) NewPodContainerManager() PodContainerManager {
+	
 	if cm.NodeConfig.CgroupsPerQOS {
 		return &podContainerManagerImpl{
-			qosContainersInfo: 		cm.GetQOSContainersInfo(),
-			subsystems:        		cm.subsystems,
-			cgroupManager:     		cm.cgroupManager,
-			cpuExperimentalManagerPolicy: 	cm.containerManager.GetNodeConfig().ExperimentalCPUManagerPolicy
-			podPidsLimit:      		cm.ExperimentalPodPidsLimit,
-			enforceCPULimits:  		cm.EnforceCPULimits,
-			cpuCFSQuotaPeriod: 		uint64(cm.CPUCFSQuotaPeriod / time.Microsecond),
+			qosContainersInfo: 			cm.GetQOSContainersInfo(),
+			subsystems:        			cm.subsystems,
+			cgroupManager:     			cm.cgroupManager,
+			cpuExperimentalManagerPolicyStatic: 	cm.cpuManager.policy.Name() == cpumanager.PolicyStatic
+			podPidsLimit:      			cm.ExperimentalPodPidsLimit,
+			enforceCPULimits:  			cm.EnforceCPULimits,
+			cpuCFSQuotaPeriod: 			uint64(cm.CPUCFSQuotaPeriod / time.Microsecond),
 		}
 	}
 	return &podContainerManagerNoop{
