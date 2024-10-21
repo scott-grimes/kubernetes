@@ -372,9 +372,9 @@ func TestCalculateLinuxResources(t *testing.T) {
 
 func TestCalculateLinuxResourcesWithStaticCpuPolicy(t *testing.T) {
 	_, _, m, err := createTestRuntimeManager()
-	m.cpuCFSQuota = true
-
 	assert.NoError(t, err)
+
+	m.cpuCFSQuota = true
 
 	generateResourceQuantity := func(str string) *resource.Quantity {
 		quantity := resource.MustParse(str)
