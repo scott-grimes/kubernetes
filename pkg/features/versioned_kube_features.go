@@ -760,8 +760,6 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 	WindowsHostNetwork: {
 		{Version: version.MustParse("1.26"), Default: true, PreRelease: featuregate.Alpha},
 	},
-<<<<<<< HEAD
-=======
 	NodeInclusionPolicyInPodTopologySpread: {
 		{Version: version.MustParse("1.25"), Default: false, PreRelease: featuregate.Alpha},
 		{Version: version.MustParse("1.26"), Default: true, PreRelease: featuregate.Beta},
@@ -797,5 +795,4 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
 	DisableCPUQuotaWithExclusiveCPUs: {
 		{Version: version.MustParse("1.32"), Default: true, PreRelease: featuregate.Beta},
 	},
->>>>>>> 04b2e724a9c (surface cpu pinned info)
 }
