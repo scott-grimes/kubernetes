@@ -372,7 +372,7 @@ func TestCalculateLinuxResources(t *testing.T) {
 
 func TestCalculateLinuxResourcesWithStaticCpuPolicy(t *testing.T) {
 	_, _, m, err := createTestRuntimeManager()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	m.cpuCFSQuota = true
 
