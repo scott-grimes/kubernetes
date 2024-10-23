@@ -760,6 +760,12 @@ const (
 	// if the system supports the systemd watchdog feature and has it configured properly.
 	SystemdWatchdog = featuregate.Feature("SystemdWatchdog")
 
+	// owner: @ffromani
+	// beta: v1.31
+	//
+	// Disable CPU Quota for pods which have exclusive CPUs allocated
+	DisableCPUQuotaWithExclusiveCPUs featuregate.Feature = "DisableCPUQuotaWithExclusiveCPUs"
+
 )
 
 func init() {
