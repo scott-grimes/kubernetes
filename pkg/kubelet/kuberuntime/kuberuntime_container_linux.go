@@ -42,7 +42,6 @@ import (
 	kubeapiqos "k8s.io/kubernetes/pkg/apis/core/v1/helper/qos"
 	kubefeatures "k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
-	cpumanager "k8s.io/kubernetes/pkg/kubelet/cm/cpumanager"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	kubelettypes "k8s.io/kubernetes/pkg/kubelet/types"
@@ -101,7 +100,15 @@ func (m *kubeGenericRuntimeManager) generateLinuxContainerResources(pod *v1.Pod,
 	if _, cpuRequestExists := container.Resources.Requests[v1.ResourceCPU]; cpuRequestExists {
 		cpuRequest = container.Resources.Requests.Cpu()
 	}
-	lcr := m.calculateLinuxResources(cpuRequest, container.Resources.Limits.Cpu(), container.Resources.Limits.Memory(), kubeapiqos.GetPodQOS(pod))
+
+	// If pod has exclusive cpu and the container in question has integer cpu requests
+	// the cfs quota will not be enforced
+	enforceCfsQuota := true
+	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.DisableCPUQuotaWithExclusiveCPUs) && m.containerManager.HasExclusiveCPUs(pod) && container.Resources.Requests.Cpu().Value()*1000 == container.Resources.Requests.Cpu().MilliValue() {
+		enforceCfsQuota = false
+	}
+
+	lcr := m.calculateLinuxResources(cpuRequest, container.Resources.Limits.Cpu(), container.Resources.Limits.Memory(), enforceCfsQuota)
 
 	lcr.OomScoreAdj = int64(qos.GetContainerOOMScoreAdjust(pod, container,
 		int64(m.machineInfo.MemoryCapacity)))
@@ -212,7 +219,7 @@ func (m *kubeGenericRuntimeManager) generateContainerResources(pod *v1.Pod, cont
 }
 
 // calculateLinuxResources will create the linuxContainerResources type based on the provided CPU and memory resource requests, limits
-func (m *kubeGenericRuntimeManager) calculateLinuxResources(cpuRequest, cpuLimit, memoryLimit *resource.Quantity, podQos v1.PodQOSClass) *runtimeapi.LinuxContainerResources {
+func (m *kubeGenericRuntimeManager) calculateLinuxResources(cpuRequest, cpuLimit, memoryLimit *resource.Quantity, enforceCpuLimit bool) *runtimeapi.LinuxContainerResources {
 	resources := runtimeapi.LinuxContainerResources{}
 	var cpuShares int64
 
@@ -245,8 +252,7 @@ func (m *kubeGenericRuntimeManager) calculateLinuxResources(cpuRequest, cpuLimit
 		cpuQuota := milliCPUToQuota(cpuLimit.MilliValue(), cpuPeriod)
 		resources.CpuQuota = cpuQuota
 		resources.CpuPeriod = cpuPeriod
-		if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.DisableCPUQuotaWithExclusiveCPUs) &&
-			isStaticCPUPolicyConditionSatisfied(m.containerManager.GetNodeConfig().CPUManagerPolicy, podQos, cpuRequest) {
+		if !enforceCpuLimit {
 			resources.CpuQuota = int64(-1)
 		}
 	}
@@ -334,10 +340,6 @@ func toKubeContainerResources(statusResources *runtimeapi.ContainerResources) *k
 	}
 	return cStatusResources
 }
-
-// Note: this function variable is being added here so it would be possible to mock
-// the cpu manager policy for unit tests by assigning a new mocked function into it.
-var isStaticCPUPolicyConditionSatisfied = cpumanager.StaticCPUPolicyConditionsSatisfied
 
 // Note: this function variable is being added here so it would be possible to mock
 // the cgroup version for unit tests by assigning a new mocked function into it. Without it,
