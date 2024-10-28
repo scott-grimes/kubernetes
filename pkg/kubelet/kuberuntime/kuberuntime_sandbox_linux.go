@@ -36,7 +36,7 @@ func (m *kubeGenericRuntimeManager) convertOverheadToLinuxResources(pod *v1.Pod)
 
 		// For overhead, we do not differentiate between requests and limits. Treat this overhead
 		// as "guaranteed", with requests == limits
-		resources = m.calculateLinuxResources(cpu, cpu, memory, true)
+		resources = m.calculateLinuxResources(cpu, cpu, memory, false)
 	}
 
 	return resources
@@ -54,12 +54,12 @@ func (m *kubeGenericRuntimeManager) calculateSandboxResources(pod *v1.Pod) *runt
 	}
 
 	// If pod has exclusive cpu the sandbox will not have cfs quote enforced
-	enforceCfsQuota := true
+	disableCPUQuota := false
 	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.DisableCPUQuotaWithExclusiveCPUs) && m.containerManager.HasExclusiveCPUs(pod) {
-		enforceCfsQuota = false
+		disableCPUQuota = true
 	}
 
-	return m.calculateLinuxResources(cpuRequest, lim.Cpu(), lim.Memory(), enforceCfsQuota)
+	return m.calculateLinuxResources(cpuRequest, lim.Cpu(), lim.Memory(), disableCPUQuota)
 }
 
 func (m *kubeGenericRuntimeManager) applySandboxResources(pod *v1.Pod, config *runtimeapi.PodSandboxConfig) error {
